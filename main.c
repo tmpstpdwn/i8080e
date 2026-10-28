@@ -2,8 +2,45 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
 
-int dissassemble(uint8_t *buff, size_t pc) {
+static bool trim(char *s, char buf[], size_t buf_len) {
+  return true;
+}
+
+// Returns 4 bytes. 1st byte gives the instruction len.
+// Rest 3 bytes for the actual instruction.
+// Max instruction len is 3 bytes, so it works.
+static uint32_t assemble_instr(char *instr) {
+  uint16_t asm_instr = 0;
+  uint8_t asm_instr_len = 1;
+
+  char buf[10];
+
+  char *token = strtok(instr, " ,");
+
+  if (trim(token, buf, 10)) {
+    if (strcmp("NOP", buf)) {
+      asm_instr = 1;
+      printf("hi\n");
+    }
+  }   
+
+  return asm_instr_len << 24 | asm_instr;
+}  
+
+static bool assemble_rom(FILE *fp) {
+  char line[256];
+
+  while (fgets(line, sizeof(line), fp) != NULL) {
+    assemble_instr(line);
+  }
+
+  return true;
+}
+
+static int dissassemble_instr(uint8_t *buff, size_t pc) {
   int size = 1;
   uint8_t instr = buff[pc];
 
@@ -296,50 +333,56 @@ int dissassemble(uint8_t *buff, size_t pc) {
   return size;
 }
 
-int main(int argc, char** argv) {
-  if (argc == 1) return 1;
-
-  int return_code = 0;
-
-  uint8_t *rom_buff = NULL;
-  size_t pc = 0;
-
-  // File buffering.
-  FILE *fp = fopen(argv[1], "rb");
-
-  if (!fp) {
-    printf("File opening failed.\n");
-    return_code = 1;
-    goto end;
-  }
-
+static bool dissassemble_rom(FILE *fp) {
   fseek(fp, 0, SEEK_END);
   int fsize = ftell(fp);
   rewind(fp);
 
   if (fsize <= 0) {
     printf("File size determination failed.\n");
-    return_code = 1;
-    goto end;
+    fclose(fp);
+    return false;
   }
+
+  uint8_t *rom_buff = NULL;
+  size_t pc = 0;
 
   rom_buff = malloc(fsize);
 
   if (rom_buff == NULL || fread(rom_buff, 1, fsize, fp) != fsize) {
     printf("Loading rom to memory failed.\n");
-    return_code = 1;
-    goto end;
+    free(rom_buff);
+    return false;
   }
 
   // Dissassembly of the entire rome.
   while (pc < fsize) {
-    int size = dissassemble(rom_buff, pc);
+    int size = dissassemble_instr(rom_buff, pc);
     pc += size;
   }
 
-end:
-  if (!fp) fclose(fp);
   free(rom_buff);
 
-  return return_code;
+  return true;
+}
+
+int main(int argc, char** argv) {
+  if (argc == 1) {
+    printf("Args needed!\n");
+    return 1;
+  }
+
+  // File buffering.
+  FILE *fp = fopen(argv[1], "rb");
+
+  if (!fp) {
+    printf("File opening failed.\n");
+    return 1;
+  }
+
+  assemble_rom(fp);
+
+  fclose(fp);
+
+  return 0;
 }
