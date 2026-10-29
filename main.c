@@ -4,9 +4,103 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <ctype.h>
 
-static bool trim(char *s, char buf[], size_t buf_len) {
-  return true;
+struct Instr {
+  char *name;
+};
+
+static struct Instr instr_table[] = {
+  {"NOP"},
+  {"LXI"},
+  {"STAX"},
+  {"INX"},
+  {"INR"},
+  {"DCR"},
+  {"MVI"},
+  {"RLC"},
+  {"DAD"},
+  {"LDAX"},
+  {"DCX"},
+  {"RRC"},
+  {"RAL"},
+  {"RAR"},
+  {"SHLD"},
+  {"DAA"},
+  {"LHLD"},
+  {"CMA"},
+  {"STA"},
+  {"STC"},
+  {"LDA"},
+  {"CMC"},
+  {"MOV"},
+  {"HLT"},
+  {"ADD"},
+  {"ADC"},
+  {"SUB"},
+  {"SBB"},
+  {"ANA"},
+  {"XRA"},
+  {"ORA"},
+  {"CMP"},
+  {"RNZ"},
+  {"POP"},
+  {"JNZ"},
+  {"JMP"},
+  {"CNZ"},
+  {"PUSH"},
+  {"ADI"},
+  {"RST"},
+  {"RZ"},
+  {"RET"},
+  {"JZ"},
+  {"CZ"},
+  {"CALL"},
+  {"ACI"},
+  {"RNC"},
+  {"JNC"},
+  {"OUT"},
+  {"CNC"},
+  {"SUI"},
+  {"RC"},
+  {"JC"},
+  {"IN"},
+  {"CC"},
+  {"SBI"},
+  {"RPO"},
+  {"JPO"},
+  {"XTHL"},
+  {"CPO"},
+  {"ANI"},
+  {"RPE"},
+  {"PCHL"},
+  {"JPE"},
+  {"XCHG"},
+  {"CPE"},
+  {"XRE"},
+  {"RP"},
+  {"JP"},
+  {"DI"},
+  {"CP"},
+  {"ORI"},
+  {"RM"},
+  {"SPHL"},
+  {"JM"},
+  {"EI"},
+  {"CM"},
+  {"CPI"},
+  {NULL}
+};
+
+static void to_uppercase(char *s) {
+  if (!s) return;
+
+  while (*s) {
+    if (isalpha(*s)) {
+      *s = toupper(*s);
+    }
+    s++;
+  }
 }
 
 // Returns 4 bytes. 1st byte gives the instruction len.
@@ -16,16 +110,9 @@ static uint32_t assemble_instr(char *instr) {
   uint16_t asm_instr = 0;
   uint8_t asm_instr_len = 1;
 
-  char buf[10];
-
   char *token = strtok(instr, " ,");
 
-  if (trim(token, buf, 10)) {
-    if (strcmp("NOP", buf)) {
-      asm_instr = 1;
-      printf("hi\n");
-    }
-  }   
+  // DO THE ASM EMISSION.
 
   return asm_instr_len << 24 | asm_instr;
 }  
