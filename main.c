@@ -6,91 +6,128 @@
 #include <string.h>
 #include <ctype.h>
 
-struct Instr {
-  char *name;
+enum OpcodeType {
+  OP_FIXED,
+  OP_REG_REG,
+  OP_REG,
+  OP_REG_PAIR,
+  OP_REG_PAIR_BD,
+  OP_REG_PAIR_PSW,
+  OP_REG_IMM8,
+  OP_IMM8,
+  OP_ADDR16
 };
 
-static struct Instr instr_table[] = {
-  {"NOP"},
-  {"LXI"},
-  {"STAX"},
-  {"INX"},
-  {"INR"},
-  {"DCR"},
-  {"MVI"},
-  {"RLC"},
-  {"DAD"},
-  {"LDAX"},
-  {"DCX"},
-  {"RRC"},
-  {"RAL"},
-  {"RAR"},
-  {"SHLD"},
-  {"DAA"},
-  {"LHLD"},
-  {"CMA"},
-  {"STA"},
-  {"STC"},
-  {"LDA"},
-  {"CMC"},
-  {"MOV"},
-  {"HLT"},
-  {"ADD"},
-  {"ADC"},
-  {"SUB"},
-  {"SBB"},
-  {"ANA"},
-  {"XRA"},
-  {"ORA"},
-  {"CMP"},
-  {"RNZ"},
-  {"POP"},
-  {"JNZ"},
-  {"JMP"},
-  {"CNZ"},
-  {"PUSH"},
-  {"ADI"},
-  {"RST"},
-  {"RZ"},
-  {"RET"},
-  {"JZ"},
-  {"CZ"},
-  {"CALL"},
-  {"ACI"},
-  {"RNC"},
-  {"JNC"},
-  {"OUT"},
-  {"CNC"},
-  {"SUI"},
-  {"RC"},
-  {"JC"},
-  {"IN"},
-  {"CC"},
-  {"SBI"},
-  {"RPO"},
-  {"JPO"},
-  {"XTHL"},
-  {"CPO"},
-  {"ANI"},
-  {"RPE"},
-  {"PCHL"},
-  {"JPE"},
-  {"XCHG"},
-  {"CPE"},
-  {"XRE"},
-  {"RP"},
-  {"JP"},
-  {"DI"},
-  {"CP"},
-  {"ORI"},
-  {"RM"},
-  {"SPHL"},
-  {"JM"},
-  {"EI"},
-  {"CM"},
-  {"CPI"},
+struct OpRec {
+  char *name;
+  enum OpcodeType type;
+  uint8_t opcode;
+};
+
+static struct OpRec opcode_table[] = {
+  {"NOP",      OP_FIXED,          0x00},
+  {"LXI",      OP_REG_PAIR,       0x01},
+  {"STAX",     OP_REG_PAIR_BD,    0x02},
+  {"INX",      OP_REG_PAIR,       0x03},
+  {"INR",      OP_REG,            0x04},
+  {"DCR",      OP_REG,            0x05},
+  {"MVI",      OP_REG_IMM8,       0x06},
+  {"RLC",      OP_FIXED,          0x07},
+  {"DAD",      OP_REG_PAIR,       0x09},
+  {"LDAX",     OP_REG_PAIR_BD,    0x0A},
+  {"DCX",      OP_REG_PAIR,       0x0B},
+  {"RRC",      OP_FIXED,          0x0F},
+  {"RAL",      OP_FIXED,          0x17},
+  {"RAR",      OP_FIXED,          0x1F},
+  {"SHLD",     OP_ADDR16,         0x22},
+  {"DAA",      OP_FIXED,          0x27},
+  {"LHLD",     OP_ADDR16,         0x2A},
+  {"CMA",      OP_FIXED,          0x2F},
+  {"STA",      OP_ADDR16,         0x32},
+  {"STC",      OP_FIXED,          0x37},
+  {"LDA",      OP_ADDR16,         0x3a},
+  {"CMC",      OP_FIXED,          0x3F},
+  {"MOV",      OP_REG_REG,        0x40},
+  {"HLT",      OP_FIXED,          0x76},
+  {"ADD",      OP_REG,            0x80},
+  {"ADC",      OP_REG,            0x88},
+  {"SUB",      OP_REG,            0x90},
+  {"SBB",      OP_REG,            0x98},
+  {"ANA",      OP_REG,            0xA0},
+  {"XRA",      OP_REG,            0xA8},
+  {"ORA",      OP_REG,            0xB0},
+  {"CMP",      OP_REG,            0xB8},
+  {"RNZ",      OP_FIXED,          0xC0},
+  {"POP",      OP_REG_PAIR_PSW,   0xC1},
+  {"JNZ",      OP_ADDR16,         0xC2},
+  {"JMP",      OP_ADDR16,         0xC3},
+  {"CNZ",      OP_ADDR16,         0xC4},
+  {"PUSH",     OP_REG_PAIR_PSW,   0xc5},
+  {"ADI",      OP_IMM8,           0xC6},
+  {"RST",      OP_IMM8,           0xC7},
+  {"RZ",       OP_FIXED,          0xC8},
+  {"RET",      OP_FIXED,          0xC9},
+  {"JZ",       OP_ADDR16,         0xCA},
+  {"CZ",       OP_ADDR16,         0xCC},
+  {"CALL",     OP_ADDR16,         0xCD},
+  {"ACI",      OP_IMM8,           0xCE},
+  {"RNC",      OP_FIXED,          0xD0},
+  {"JNC",      OP_ADDR16,         0xD2},
+  {"OUT",      OP_IMM8,           0xD3},
+  {"CNC",      OP_ADDR16,         0xD4},
+  {"SUI",      OP_IMM8,           0xD6},
+  {"RC",       OP_FIXED,          0xD8},
+  {"JC",       OP_ADDR16,         0xDA},
+  {"IN",       OP_IMM8,           0xDB},
+  {"CC",       OP_ADDR16,         0xDC},
+  {"SBI",      OP_IMM8,           0xDE},
+  {"RPO",      OP_FIXED,          0xE0},
+  {"JPO",      OP_ADDR16,         0xE2},
+  {"XTHL",     OP_FIXED,          0xE3},
+  {"CPO",      OP_ADDR16,         0xE4},
+  {"ANI",      OP_IMM8,           0xE6},
+  {"RPE",      OP_FIXED,          0xE8},
+  {"PCHL",     OP_FIXED,          0xE9},
+  {"JPE",      OP_ADDR16,         0xEA},
+  {"XCHG",     OP_FIXED,          0xEB},
+  {"CPE",      OP_ADDR16,         0xEC},
+  {"XRI",      OP_IMM8,           0xEE},
+  {"RP",       OP_FIXED,          0xF0},
+  {"JP",       OP_ADDR16,         0xF2},
+  {"DI",       OP_FIXED,          0xF3},
+  {"CP",       OP_ADDR16,         0xF4},
+  {"ORI",      OP_IMM8,           0xF6},
+  {"RM",       OP_FIXED,          0xF8},
+  {"SPHL",     OP_FIXED,          0xF9},
+  {"JM",       OP_ADDR16,         0xFA},
+  {"EI",       OP_FIXED,          0xFB},
+  {"CM",       OP_ADDR16,         0xFC},
+  {"CPI",      OP_IMM8,           0xFE},
   {NULL}
 };
+
+static int reg_to_num(char r) {
+  switch (r) {
+    case 'B':
+      return 0;
+    case 'C':
+      return 1;
+    case 'D':
+      return 2;
+    case 'E':
+      return 3;
+    case 'H':
+      return 4;
+    case 'L':
+      return 5;
+    case 'M':
+      return 6;
+    case 'A':
+      return 7;
+    default:
+      return -1;
+  }
+}
 
 static void to_uppercase(char *s) {
   if (!s) return;
